@@ -43,7 +43,7 @@ def line_search(f,x,p,nabla):
     return a
 
 
-def BFGS(f,x0,max_it,plot=False):
+def BFGS(f,x0,max_it):
     '''
     DESCRIPTION
     BFGS Quasi-Newton Method, implemented as described in Nocedal:
@@ -66,14 +66,6 @@ def BFGS(f,x0,max_it,plot=False):
     H = xp.eye(d) # initial hessian
     x = x0[:]
     it = 2 
-    # if plot == True: 
-    #     if d == 2: 
-    #         x_store =  xp.zeros((1,2)) # storing x values 
-    #         x_store = x_store.at[0,:].set(x) 
-    #     else: 
-    #         print('Too many dimensions to produce trajectory plot!')
-    #         plot = False
-    # #
     while xp.linalg.norm(nabla) > 1e-5: # while gradient is positive
         print("BFGS Iteration {}".format(it))
         if it > max_it: 
@@ -97,20 +89,6 @@ def BFGS(f,x0,max_it,plot=False):
         H = hess_inter + (r*((s@(s.T)))) # BFGS Update
         nabla = nabla_new[:] 
         x = x_new[:]
-    #     if plot == True:
-    #         x_store = xp.append(x_store,[x],axis=0) # storing x
-    # if plot == True:
-    #     x1 = xp.linspace(min(x_store[:,0]-0.5),max(x_store[:,0]+0.5),30)
-    #     x2 = xp.linspace(min(x_store[:,1]-0.5),max(x_store[:,1]+0.5),30)
-    #     X1,X2 = xp.meshgrid(x1,x2)
-    #     Z = f([X1,X2])
-    #     plt.figure()
-    #     plt.title('OPTIMAL AT: '+str(x_store[-1,:])+'\n IN '+str(len(x_store))+' ITERATIONS')
-    #     plt.contourf(X1,X2,Z,30,cmap='jet')
-    #     plt.colorbar()
-    #     plt.plot(x_store[:,0],x_store[:,1],c='w')
-    #     plt.xlabel('$x_1$'); plt.ylabel('$x_2$')
-    #     plt.show()
     return x
 
 
