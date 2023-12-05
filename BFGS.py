@@ -119,15 +119,16 @@ def grad(f_init,x,args,h=1e-3):
                     U_shot = [U_shot_i], \
                     R_pad = args[4], \
                     s_corrupted = args[5])
-        #
         #Evaluate finite difference 
-        x_for = x.at[i].set(x[i]+h) 
-        x_back = x.at[i].set(x[i]-h) 
+        x_for_init = x.at[i].set(x[i]+h) 
+        x_back_init = x.at[i].set(x[i]-h) 
+        x_for = x_for_init[TR_ind*6:(TR_ind+1)*6]
+        x_back = x_back_init[TR_ind*6:(TR_ind+1)*6]
         f_for = f(x_for)
         f_back = f(x_back)
         f_dif = (f_for- f_back)/(2*h)
         g = g.at[i].set(f_dif)
-        print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end = '\r')
+        print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
     return g 
 
 
