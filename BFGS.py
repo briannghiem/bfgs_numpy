@@ -75,7 +75,7 @@ def BFGS(f,x0,args,max_it,spath):
         it += 1
         #Save to store
         x_store.append(x)
-        f_store.append(f(x))
+        f_store.append(f(x,args[0],args[1],args[2],args[3],args[4],args[5]))
         g_store.append(g)
         xp.save(spath + r'/opt_out.npy', [x_store, f_store, g_store])
         t2 = time()
@@ -99,12 +99,6 @@ def _f_intra(Mtraj_est_n, m_est=None, C=None, res=None, U_shot=None, R_pad=None,
     DC = s_n.flatten() - (U_shot_full*s_corrupted).flatten()
     return xp.abs(xp.dot(xp.conjugate(DC), DC)) #L2-norm
 
-_f_intra_part = partial(_f_intra, m_est = m_est, \
-                        C = C, res = res, \
-                        U_shot = U_shot, \
-                        R_pad = R_pad, \
-                        s_corrupted = s_corrupted)
-
 def grad(f_init,x,args,h=1e-3):     
     #CENTRAL FINITE DIFFERENCE CALCULATION
     # h = xp.cbrt(xp.finfo(float).eps)
@@ -112,7 +106,7 @@ def grad(f_init,x,args,h=1e-3):
     g = xp.zeros(d)
     for i in range(d): 
         #Set-up partial loss func
-        TR_ind = xp.floor(i/6) #Index of TR, given 6 DOFs per TR
+        TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
         U_shot_i = args[3][TR_ind]
         f = partial(f_init, m_est = args[0], \
                     C = args[1], res = args[2], \
@@ -167,8 +161,19 @@ Mtraj_est_n = xp.tile(Mtraj_est_init, (shot_TRs,1)).flatten()
 
 maxiter = 2
 args = [m_est, C, res, U_shot, R_pad, s_corrupted]
-g = grad(_f_intra_part, Mtraj_est_n, args)
-opt_out = BFGS(_f_intra_part, Mtraj_est_n, maxiter, spath)
+from time import time
+t1 = time()
+g = grad(_f_intra, Mtraj_est_n, args)
+t2 = time()
+print("Elapsed time for gradient evaluation: {} sec".format(t2 - t1))
+
+
+t1 = time()
+opt_out = BFGS(_f_intra, Mtraj_est_n, args, maxiter, spath)
+t2 = time()
+print("Elapsed time for BFGS evaluation: {} sec".format(t2 - t1))
+#
+
 Mtraj_est_n_new = opt_out[0][0]
 
 Mtraj_est_n_plt = Mtraj_est_n.reshape(16,6)
