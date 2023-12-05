@@ -112,7 +112,8 @@ def grad(f_init,x,args,h=1e-3):
     g = xp.zeros(d)
     for i in range(d): 
         #Set-up partial loss func
-        U_shot_i = args[3][i]
+        TR_ind = xp.floor(i/6) #Index of TR, given 6 DOFs per TR
+        U_shot_i = args[3][TR_ind]
         f = partial(f_init, m_est = args[0], \
                     C = args[1], res = args[2], \
                     U_shot = [U_shot_i], \
