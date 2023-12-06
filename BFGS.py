@@ -97,40 +97,40 @@ def _f_intra(Mtraj_est_n, m_est=None, C=None, res=None, U_shot=None, R_pad=None,
     DC = s_n.flatten() - (U_shot_full*s_corrupted).flatten()
     return xp.abs(xp.dot(xp.conjugate(DC), DC)) #L2-norm
 
-def grad(f_init,x,args,h=1e-3):     
-    #CENTRAL FINITE DIFFERENCE CALCULATION
-    # h = xp.cbrt(xp.finfo(float).eps)
-    d = len(x)
-    g = xp.zeros(d)
-    U_RO = args[3][0][0]
-    U_PE1 = [int(args[3][i][1]) for i in range(len(args[3]))]
-    U_PE2 = args[3][0][2]
-    for i in range(d):
-        #Set-up partial loss func
-        TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
-        U_shot_i = args[3][TR_ind]
-        U_PE1_rest = xp.asarray(U_PE1[:TR_ind] + U_PE1[TR_ind+1:])
-        U_shot_i_rest = [U_RO, U_PE1_rest, U_PE2]
-        U_shot_temp = [U_shot_i, U_shot_i_rest]
-        f = partial(f_init, m_est = args[0], \
-                    C = args[1], res = args[2], \
-                    U_shot = U_shot_temp, \
-                    R_pad = args[4], \
-                    s_corrupted = args[5])
-        #Evaluate finite difference
-        x_init = x[TR_ind*6:(TR_ind+1)*6]
-        x_for_init = x.at[i].set(x[i]+h)[TR_ind*6:(TR_ind+1)*6]
-        x_back_init = x.at[i].set(x[i]-h)[TR_ind*6:(TR_ind+1)*6]
-        x_for = xp.append(x_for_init, x_init)
-        x_back = xp.append(x_back_init, x_init)
-        f_for = f(x_for)
-        f_back = f(x_back)
-        f_dif = (f_for- f_back)/(2*h)
-        g = g.at[i].set(f_dif)
-        print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
-    return g 
+# def grad(f_init,x,args,h=1e-3):     
+#     #CENTRAL FINITE DIFFERENCE CALCULATION
+#     # h = xp.cbrt(xp.finfo(float).eps)
+#     d = len(x)
+#     g = xp.zeros(d)
+#     U_RO = args[3][0][0]
+#     U_PE1 = [int(args[3][i][1]) for i in range(len(args[3]))]
+#     U_PE2 = args[3][0][2]
+#     for i in range(d):
+#         #Set-up partial loss func
+#         TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
+#         U_shot_i = args[3][TR_ind]
+#         U_PE1_rest = xp.asarray(U_PE1[:TR_ind] + U_PE1[TR_ind+1:])
+#         U_shot_i_rest = [U_RO, U_PE1_rest, U_PE2]
+#         U_shot_temp = [U_shot_i, U_shot_i_rest]
+#         f = partial(f_init, m_est = args[0], \
+#                     C = args[1], res = args[2], \
+#                     U_shot = U_shot_temp, \
+#                     R_pad = args[4], \
+#                     s_corrupted = args[5])
+#         #Evaluate finite difference
+#         x_init = x[TR_ind*6:(TR_ind+1)*6]
+#         x_for_init = x.at[i].set(x[i]+h)[TR_ind*6:(TR_ind+1)*6]
+#         x_back_init = x.at[i].set(x[i]-h)[TR_ind*6:(TR_ind+1)*6]
+#         x_for = xp.append(x_for_init, x_init)
+#         x_back = xp.append(x_back_init, x_init)
+#         f_for = f(x_for)
+#         f_back = f(x_back)
+#         f_dif = (f_for- f_back)/(2*h)
+#         g = g.at[i].set(f_dif)
+#         print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
+#     return g 
 
-def _grad_SingleTR(f_init,x,args,h=1e-3):     
+def grad(f_init,x,args,h=1e-3):     
     #CENTRAL FINITE DIFFERENCE CALCULATION
     # h = xp.cbrt(xp.finfo(float).eps)
     d = len(x)
@@ -153,7 +153,7 @@ def _grad_SingleTR(f_init,x,args,h=1e-3):
         g = g.at[i].set(f_dif)
         print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
     return g 
-    
+
 #--------------------------------
 #Picking up algorithm
 m_est = np.load(spath + r'/m_intmd.npy')
