@@ -104,20 +104,21 @@ def grad(f_init,x,args,h=1e-3):
     # h = xp.cbrt(xp.finfo(float).eps)
     d = len(x)
     g = xp.zeros(d)
+    U_shot_RO = U_shot[0][0]
+    U_shot_PE2 = U_shot[0][2]
+    U_shot_PE1 = [int(U_shot[i][1]) for i in range(len(U_shot))]
+    U_shot_combined = [U_shot_RO, U_shot_PE1, U_shot_PE2]
+    #
     for i in range(d): 
         #Set-up partial loss func
-        TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
-        U_shot_i = args[3][TR_ind]
         f = partial(f_init, m_est = args[0], \
                     C = args[1], res = args[2], \
-                    U_shot = [U_shot_i], \
+                    U_shot = U_shot_combined, \
                     R_pad = args[4], \
                     s_corrupted = args[5])
         #Evaluate finite difference 
-        x_for_init = x.at[i].set(x[i]+h) 
-        x_back_init = x.at[i].set(x[i]-h) 
-        x_for = x_for_init[TR_ind*6:(TR_ind+1)*6]
-        x_back = x_back_init[TR_ind*6:(TR_ind+1)*6]
+        x_for = x.at[i].set(x[i]+h) 
+        x_back = x.at[i].set(x[i]-h) 
         f_for = f(x_for)
         f_back = f(x_back)
         f_dif = (f_for- f_back)/(2*h)
@@ -125,7 +126,14 @@ def grad(f_init,x,args,h=1e-3):
         print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
     return g 
 
-
+    
+#--------------------------------
+#Picking up algorithm
+m_est = np.load(spath + r'/m_intmd.npy')
+m_loss_store = list(np.load(spath + r'/m_loss_store.npy', allow_pickle=1))
+Mtraj_store = list(np.load(spath + r'/Mtraj_store.npy', allow_pickle=1))
+Mtraj_est = Mtraj_store[-1][0]
+    
 #--------------------------------
 #Setting up shot pattern 
 nTRs = 16
@@ -133,12 +141,14 @@ nPE = m_est.shape[1]
 U_alt = U[0][1]
 for i in range(1,len(U)):
     U_alt = xp.concatenate((U_alt, U[i][1]))
+#
 
 nstart = 0
 U_full = []
 U_full.append([U[0][0], U_alt[nstart], U[0][2]])
 for i in range(nstart+1, nPE):
     U_full.append([U[0][0], U_alt[i], U[0][2]])
+#
 
 #Working with first 16 TRs (ie. first shot)
 shot_ind = 1
@@ -159,8 +169,11 @@ U_shot = U_full[shot_ind*shot_TRs:(shot_ind+1)*shot_TRs]
 Mtraj_est_init = Mtraj_est[shot_ind,:]
 Mtraj_est_n = xp.tile(Mtraj_est_init, (shot_TRs,1)).flatten()
 
+
 maxiter = 2
 args = [m_est, C, res, U_shot, R_pad, s_corrupted]
+
+
 from time import time
 t1 = time()
 g = grad(_f_intra, Mtraj_est_n, args)
@@ -178,6 +191,7 @@ Mtraj_est_n_new = opt_out[0][0]
 
 Mtraj_est_n_plt = Mtraj_est_n.reshape(16,6)
 Mtraj_est_n_new_plt = Mtraj_est_n_new.reshape(16,6)
+
 
 plt.style.use('dark_background')
 
