@@ -91,11 +91,9 @@ def _f_intra(Mtraj_est_n, m_est=None, C=None, res=None, U_shot=None, R_pad=None,
     #Data consistency for a given shot
     n_shots = len(U_shot)
     s_n = eop.Encode(m_est, C, U_shot, Mtraj_est_n.reshape(n_shots, 6), res, R_pad)
-    #
     U_shot_full = xp.zeros(s_corrupted.shape)
     for i in range(len(U_shot)):
         U_shot_full += eop._gen_U_n(U_shot[i], m_est.shape)
-    #
     DC = s_n.flatten() - (U_shot_full*s_corrupted).flatten()
     return xp.abs(xp.dot(xp.conjugate(DC), DC)) #L2-norm
 
@@ -104,50 +102,27 @@ def grad(f_init,x,args,h=1e-3):
     # h = xp.cbrt(xp.finfo(float).eps)
     d = len(x)
     g = xp.zeros(d)
-<<<<<<< HEAD
-    #
     U_RO = args[3][0][0]
     U_PE1 = [int(args[3][i][1]) for i in range(len(args[3]))]
     U_PE2 = args[3][0][2]
-    #
-    for i in range(d): 
+    for i in range(d):
         #Set-up partial loss func
         TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
         U_shot_i = args[3][TR_ind]
         U_PE1_rest = xp.asarray(U_PE1[:TR_ind] + U_PE1[TR_ind+1:])
         U_shot_i_rest = [U_RO, U_PE1_rest, U_PE2]
         U_shot_temp = [U_shot_i, U_shot_i_rest]
-        #
         f = partial(f_init, m_est = args[0], \
                     C = args[1], res = args[2], \
                     U_shot = U_shot_temp, \
-=======
-    U_shot_RO = U_shot[0][0]
-    U_shot_PE2 = U_shot[0][2]
-    U_shot_PE1 = [int(U_shot[i][1]) for i in range(len(U_shot))]
-    U_shot_combined = [U_shot_RO, U_shot_PE1, U_shot_PE2]
-    #
-    for i in range(d): 
-        #Set-up partial loss func
-        f = partial(f_init, m_est = args[0], \
-                    C = args[1], res = args[2], \
-                    U_shot = U_shot_combined, \
->>>>>>> 7d214f07de7406d26e13125805d4ffab91f6b853
                     R_pad = args[4], \
                     s_corrupted = args[5])
-        #
-        #Evaluate finite difference 
-<<<<<<< HEAD
+        #Evaluate finite difference
         x_init = x[TR_ind*6:(TR_ind+1)*6]
         x_for_init = x.at[i].set(x[i]+h)[TR_ind*6:(TR_ind+1)*6]
         x_back_init = x.at[i].set(x[i]-h)[TR_ind*6:(TR_ind+1)*6]
         x_for = xp.append(x_for_init, x_init)
         x_back = xp.append(x_back_init, x_init)
-        #
-=======
-        x_for = x.at[i].set(x[i]+h) 
-        x_back = x.at[i].set(x[i]-h) 
->>>>>>> 7d214f07de7406d26e13125805d4ffab91f6b853
         f_for = f(x_for)
         f_back = f(x_back)
         f_dif = (f_for- f_back)/(2*h)
@@ -155,6 +130,29 @@ def grad(f_init,x,args,h=1e-3):
         print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
     return g 
 
+def _grad_SingleTR(f_init,x,args,h=1e-3):     
+    #CENTRAL FINITE DIFFERENCE CALCULATION
+    # h = xp.cbrt(xp.finfo(float).eps)
+    d = len(x)
+    g = xp.zeros(d)
+    for i in range(d): 
+        #Set-up partial loss func
+        TR_ind = int(xp.floor(i/6)) #Index of TR, given 6 DOFs per TR
+        U_shot_i = args[3][TR_ind]
+        f = partial(f_init, m_est = args[0], \
+                    C = args[1], res = args[2], \
+                    U_shot = [U_shot_i], \
+                    R_pad = args[4], \
+                    s_corrupted = args[5])
+        #Evaluate finite difference 
+        x_for = x.at[i].set(x[i]+h)[TR_ind*6:(TR_ind+1)*6]
+        x_back = x.at[i].set(x[i]-h)[TR_ind*6:(TR_ind+1)*6]
+        f_for = f(x_for)
+        f_back = f(x_back)
+        f_dif = (f_for- f_back)/(2*h)
+        g = g.at[i].set(f_dif)
+        print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
+    return g 
     
 #--------------------------------
 #Picking up algorithm
@@ -205,10 +203,8 @@ U_shot = U_full[shot_ind*shot_TRs:(shot_ind+1)*shot_TRs]
 Mtraj_est_init = Mtraj_est[shot_ind,:]
 Mtraj_est_n = xp.tile(Mtraj_est_init, (shot_TRs,1)).flatten()
 
-
 maxiter = 2
 args = [m_est, C, res, U_shot, R_pad, s_corrupted]
-
 
 from time import time
 t1 = time()
@@ -216,21 +212,16 @@ g = grad(_f_intra, Mtraj_est_n, args)
 t2 = time()
 print("Elapsed time for gradient evaluation: {} sec".format(t2 - t1))
 
-
 t1 = time()
 opt_out = BFGS(_f_intra, Mtraj_est_n, args, maxiter, spath)
 t2 = time()
 print("Elapsed time for BFGS evaluation: {} sec".format(t2 - t1))
-#
 
 Mtraj_est_n_new = opt_out[0][0]
-
 Mtraj_est_n_plt = Mtraj_est_n.reshape(16,6)
 Mtraj_est_n_new_plt = Mtraj_est_n_new.reshape(16,6)
 
-
 plt.style.use('dark_background')
-
 plt.figure()
 plt.plot(Mtraj_est_n_new_plt[:,0], '#1F77B4', label = "SI - UNet+JE")
 plt.plot(Mtraj_est_n_new_plt[:,1], '#2CA02C', label = "AP - UNet+JE")
