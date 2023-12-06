@@ -104,6 +104,7 @@ def grad(f_init,x,args,h=1e-3):
     # h = xp.cbrt(xp.finfo(float).eps)
     d = len(x)
     g = xp.zeros(d)
+<<<<<<< HEAD
     #
     U_RO = args[3][0][0]
     U_PE1 = [int(args[3][i][1]) for i in range(len(args[3]))]
@@ -120,16 +121,33 @@ def grad(f_init,x,args,h=1e-3):
         f = partial(f_init, m_est = args[0], \
                     C = args[1], res = args[2], \
                     U_shot = U_shot_temp, \
+=======
+    U_shot_RO = U_shot[0][0]
+    U_shot_PE2 = U_shot[0][2]
+    U_shot_PE1 = [int(U_shot[i][1]) for i in range(len(U_shot))]
+    U_shot_combined = [U_shot_RO, U_shot_PE1, U_shot_PE2]
+    #
+    for i in range(d): 
+        #Set-up partial loss func
+        f = partial(f_init, m_est = args[0], \
+                    C = args[1], res = args[2], \
+                    U_shot = U_shot_combined, \
+>>>>>>> 7d214f07de7406d26e13125805d4ffab91f6b853
                     R_pad = args[4], \
                     s_corrupted = args[5])
         #
         #Evaluate finite difference 
+<<<<<<< HEAD
         x_init = x[TR_ind*6:(TR_ind+1)*6]
         x_for_init = x.at[i].set(x[i]+h)[TR_ind*6:(TR_ind+1)*6]
         x_back_init = x.at[i].set(x[i]-h)[TR_ind*6:(TR_ind+1)*6]
         x_for = xp.append(x_for_init, x_init)
         x_back = xp.append(x_back_init, x_init)
         #
+=======
+        x_for = x.at[i].set(x[i]+h) 
+        x_back = x.at[i].set(x[i]-h) 
+>>>>>>> 7d214f07de7406d26e13125805d4ffab91f6b853
         f_for = f(x_for)
         f_back = f(x_back)
         f_dif = (f_for- f_back)/(2*h)
@@ -137,7 +155,14 @@ def grad(f_init,x,args,h=1e-3):
         print("Dimension {} -- Finite dif: {}".format(i+1, f_dif), end='\r')
     return g 
 
-
+    
+#--------------------------------
+#Picking up algorithm
+m_est = np.load(spath + r'/m_intmd.npy')
+m_loss_store = list(np.load(spath + r'/m_loss_store.npy', allow_pickle=1))
+Mtraj_store = list(np.load(spath + r'/Mtraj_store.npy', allow_pickle=1))
+Mtraj_est = Mtraj_store[-1][0]
+    
 #--------------------------------
 #Picking up algorithm
 m_est = np.load(spath + r'/m_intmd.npy')
